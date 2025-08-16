@@ -1,3 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Prevent GitHub Linguist from detecting generated HTML
 *.html linguist-detectable=false
