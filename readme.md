@@ -4,7 +4,7 @@ Create standardized, reproducible research project structures with support for l
 
 ## Overview
 
-This package is a fork of [Ian Hussey's psychdsish project](https://github.com/ianhussey/psychdsish/tree/main). Hence, all creadit goes to him. I merely changed and removed some functions. Specifically, `projectoR` provides two main functions:
+This package is a fork of [Ian Hussey's psychdsish project](https://github.com/ianhussey/psychdsish/tree/main). Hence, all credit goes to him. I merely changed and removed some functions. Specifically, `projectoR` provides two main functions:
 
 - **`init_project()`** - Initialize a new research project with standardized folder structure
 - **`add_study()`** - Add additional studies to existing projects with automatic mode detection
@@ -22,9 +22,6 @@ Install the development version from GitHub:
 ```r
 # Install from GitHub
 devtools::install_github("howquez/projectoR")
-
-# Or install locally if you've cloned the repo
-devtools::install()
 ```
 
 ## Quick Start
@@ -35,10 +32,13 @@ devtools::install()
 library(projectoR)
 
 # Create a new project with literate programming (default)
-init_project("my-research-project", study_name = "pilot-study")
+init_project(project_root = "my-research-project",
+             study_name = "pilot-study") # defaults to "study-1"
 
 # Or create a project with traditional R scripts
-init_project("my-project", literate = FALSE)
+init_project(project_root = "my-research-project", 
+             study_name = "pilot-study",
+             literate = FALSE)
 ```
 
 This creates the project structure:
@@ -77,7 +77,7 @@ add_study("follow-up-study", project_root = "my-research-project", literate = FA
 
 ### Literate Programming Mode
 
-When `literate = TRUE`, creates .qmd files with YAML headers, setup chunks, and bibliography integration:
+When `literate = TRUE`, creates two rather illustrative .qmd files with YAML headers, setup chunks, and bibliography integration:
 
 - **01-processing.qmd** - Data cleaning and preprocessing
 - **02-analysis.qmd** - Statistical analyses and modeling
@@ -86,7 +86,7 @@ When `literate = TRUE`, creates .qmd files with YAML headers, setup chunks, and 
 
 When `literate = FALSE`, creates:
 
-- **00_run_all.R** - Master script to run entire workflow
+- **00_run_all.R** - Main script to run entire workflow
 - **01-processing.R** - Data processing script  
 - **02-analysis.R** - Analysis script
 
@@ -94,11 +94,14 @@ When `literate = FALSE`, creates:
 
 ```r
 # Initialize project
-init_project("longitudinal-study", study_name = "baseline")
+init_project(project_root = "longitudinal-study", 
+             study_name = "baseline")
 
 # Add follow-up studies
-add_study("6-month-followup", project_root = "longitudinal-study") 
-add_study("12-month-followup", project_root = "longitudinal-study")
+add_study(study_name = "6-month-followup", 
+          project_root = "longitudinal-study") 
+add_study(study_name = "12-month-followup", 
+          project_root = "longitudinal-study")
 ```
 
 The package automatically detects the existing mode and updates the main README.
@@ -109,13 +112,19 @@ The package automatically detects the existing mode and updates the main README.
 
 Initialize a new research project structure.
 
-Key parameters: `project_root`, `study_name`, `literate`, `overwrite`, `git_init`
+- `project_root` Character. Root directory for the project. If it doesn't exist, it will be created. Use "." to work in current directory
+- `study_name` Character. Name of the study folder (default: "study-1")
+- `literate` Logical, if `TRUE`, creates .qmd files for literate programming. If FALSE, creates .R scripts with a master source file
+- `overwrite` Logical that indicates whether to overwrite existing files
+- `git_init` Logical if `TRUE`, initializes a git repository with initial commit
+
+
 
 ### `add_study()`
 
 Add a new study to an existing project.
 
-Key parameters: `study_name`, `literate` (auto-detects if NULL), `project_root`, `overwrite`
+Arguments: `study_name`, `literate` (auto-detects if NULL), `project_root`, `overwrite`
 
 ## Acknowledgments
 
