@@ -200,7 +200,7 @@ start_project <- function(path = ".",
         "## Reproducibility",
         "- Place raw data in `studies/" %+% study_name %+% "/data/raw/`.",
         "- Write processing in `studies/" %+% study_name %+% "/code/01-processing.R` and analyses in `studies/" %+% study_name %+% "/code/02-analysis.R`.",
-        "- Run entire workflow with `source('studies/" %+% study_name %+% "/code/00_run_all.R')` or run scripts individually.",
+        "- Run entire workflow with `source('studies/" %+% study_name %+% "/code/00-run-all.R')` or run scripts individually.",
         "- Processing creates files in `data/processed/` and `outputs/results/`.",
         "- Analysis creates plots in `outputs/plots/` and fitted model objects in `outputs/fitted_models/`.",
         sep = "\n"
@@ -340,7 +340,7 @@ start_project <- function(path = ".",
       paste0(
         "# ", script_name, "\n",
         "# Author: author\n\n",
-        "# Consider loading and installing required packages in main file (00_run_all.R)\n\n",
+        "# Consider loading and installing required packages in main file (00-run-all.R)\n\n",
         "# Your code here...\n\n",
         "# Session info\n",
         "sessionInfo()\n\n"
@@ -354,7 +354,7 @@ start_project <- function(path = ".",
     }))
 
     # Create master source script
-    master_script_path <- join(project_dir, "studies", study_name, "code", "00_run_all.R")
+    master_script_path <- join(project_dir, "studies", study_name, "code", "00-run-all.R")
     master_script_content <- paste0(
       "# Main script to run entire analysis workflow\n",
       "# Setup -----\n",

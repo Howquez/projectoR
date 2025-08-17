@@ -196,7 +196,7 @@ Each file includes:
 ### Traditional R Script Mode (`literate = FALSE`)
 
 Creates traditional R workflow:
-- **00_run_all.R** - Master script to run entire workflow
+- **00-run-all.R** - Master script to run entire workflow
 - **01-processing.R** - Data processing script  
 - **02-analysis.R** - Analysis script
 
