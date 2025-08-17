@@ -1,28 +1,31 @@
 #' Initialize Research Project Structure
 #' @description Creates a standardized research project structure with optional literate programming and git initialization
-#' @param project_root Root directory for the project. If it doesn't exist, it will be created. Use "." to work in current directory.
-#' @param study_name Name of the study folder (default: "study-1")
+#' @param path Directory where the project should be created. If it doesn't exist, it will be created. Use "." to work in current directory.
+#' @param project_name Name of the overall research project. If NULL, uses the basename of the path.
+#' @param study_name Name of the study folder within studies/ (default: "study-1")
 #' @param overwrite Whether to overwrite existing files
 #' @param literate If TRUE, creates .qmd files for literate programming. If FALSE, creates .R scripts with a master source file
 #' @param git_init If TRUE, initializes a git repository with initial commit
-#' @return Invisible data frame of created paths
+#' @param open_session If TRUE, opens .Rproj of newly created project
 #' @export
 #' @examples
 #' \dontrun{
 #' # Create new project in new directory
-#' init_project("my-awesome-study")
+#' start_project("~/research/my-awesome-study")
 #'
-#' # Create project in current directory
-#' init_project(".", study_name = "experiment-1")
+#' # Create project in current directory with custom name
+#' start_project(".", project_name = "dissertation-study", study_name = "experiment-1")
 #'
 #' # Create with R scripts instead of .qmd files
-#' init_project("my-project", literate = FALSE, git_init = TRUE)
+#' start_project("my-project", study_name = "pilot", literate = FALSE, git_init = TRUE)
 #' }
-init_project <- function(project_root = ".",
-                         study_name = "study-1",
-                         overwrite = FALSE,
-                         literate = TRUE,
-                         git_init = FALSE) {
+start_project <- function(path = ".",
+                          project_name = NULL,
+                          study_name = "study-1",
+                          overwrite = FALSE,
+                          literate = TRUE,
+                          git_init = FALSE,
+                          open_session = FALSE) {
 
   # minimal dependencies: base R only
   join <- function(...) file.path(..., fsep = .Platform$file.sep)
@@ -41,43 +44,60 @@ init_project <- function(project_root = ".",
   # helper for string concatenation
   `%+%` <- function(a, b) paste0(a, b)
 
-  # Handle directory creation
-  if (project_root != ".") {
-    if (dir.exists(project_root) && !overwrite) {
-      message("Working in existing directory: ", normalizePath(project_root))
+  # Determine the actual project directory and project name
+  if (is.null(project_name)) {
+    # No project name provided - use path as-is
+    project_dir <- path
+    if (path == ".") {
+      project_name <- basename(getwd())
     } else {
-      if (!dir.exists(project_root)) {
-        dir.create(project_root, recursive = TRUE)
-        message("Created new directory: ", normalizePath(project_root))
-      }
+      project_name <- basename(normalizePath(path, mustWork = FALSE))
     }
   } else {
-    message("Working in current directory: ", getwd())
+    # Project name provided - determine if we need a subdirectory
+    if (path == ".") {
+      # Working in current directory with explicit project name
+      project_dir <- "."
+    } else {
+      # Create subdirectory with project name
+      project_dir <- file.path(path, project_name)
+    }
   }
 
+  # Create project directory if needed
+  if (project_dir != "." && !dir.exists(project_dir)) {
+    dir.create(project_dir, recursive = TRUE)
+    message("Created new project directory: ", normalizePath(project_dir))
+  } else if (project_dir == ".") {
+    message("Working in current directory: ", getwd())
+  } else {
+    message("Working in existing directory: ", normalizePath(project_dir))
+  }
+
+  # Define directory structure with studies folder
   dirs <- c(
     "writeup",
     "literature",
-    study_name,
-    study_name %+% "/materials",
-    study_name %+% "/code",
-    study_name %+% "/data",
-    study_name %+% "/data/raw",
-    study_name %+% "/data/processed",
-    study_name %+% "/outputs",
-    study_name %+% "/outputs/plots",
-    study_name %+% "/outputs/fitted_models",
-    study_name %+% "/outputs/results",
-    study_name %+% "/preregistration"
+    "studies",
+    "studies/" %+% study_name,
+    "studies/" %+% study_name %+% "/materials",
+    "studies/" %+% study_name %+% "/code",
+    "studies/" %+% study_name %+% "/data",
+    "studies/" %+% study_name %+% "/data/raw",
+    "studies/" %+% study_name %+% "/data/processed",
+    "studies/" %+% study_name %+% "/outputs",
+    "studies/" %+% study_name %+% "/outputs/plots",
+    "studies/" %+% study_name %+% "/outputs/fitted_models",
+    "studies/" %+% study_name %+% "/outputs/results",
+    "studies/" %+% study_name %+% "/preregistration"
   )
 
   # create all directories
-  paths_dir <- file.path(project_root, dirs)
+  paths_dir <- file.path(project_dir, dirs)
   invisible(lapply(paths_dir, mkd))
 
   # --- .Rproj file ---
-  project_name <- if (project_root == ".") basename(getwd()) else basename(normalizePath(project_root))
-  rproj_path <- join(project_root, paste0(project_name, ".Rproj"))
+  rproj_path <- join(project_dir, paste0(project_name, ".Rproj"))
   rproj_content <- paste(
     "Version: 1.0",
     "",
@@ -101,7 +121,7 @@ init_project <- function(project_root = ".",
   write_if_absent(rproj_path, rproj_content)
 
   # --- files: LICENSE (CC BY 4.0), bibtex & README ---
-  license_path <- join(project_root, "LICENSE")
+  license_path <- join(project_dir, "LICENSE")
   license_text <- paste(
     "Creative Commons Attribution 4.0 International (CC BY 4.0)\n",
     "This work is licensed under the Creative Commons Attribution 4.0",
@@ -120,7 +140,7 @@ init_project <- function(project_root = ".",
   write_if_absent(license_path, license_text)
 
   # bibtex
-  references_path <- join(project_root, "literature", "_references.bib")
+  references_path <- join(project_dir, "literature", "_references.bib")
   references_text <- paste(
     "@article{RoggenkampEtAl_2025,",
     "  title={DICE: Advancing Social Media Research through Digital In-Context Experiments},",
@@ -137,53 +157,52 @@ init_project <- function(project_root = ".",
   write_if_absent(references_path, references_text)
 
   # READMEs
-  readme_path <- join(project_root, "README.md")
+  readme_path <- join(project_dir, "README.md")
   file_ext <- if (literate) ".qmd/.Rmd" else ".R"
   readme_text <- paste(
-    "# Project Title",
+    "# " %+% project_name,
     "",
     "## Overview",
     "Add aims, data sources, and reproduction steps.",
     "",
     "## Structure",
     "```\n" %+%
-      "literature/_references.bib  # \n" %+%
+      "literature/_references.bib  # project-wide bibliography\n" %+%
       "writeup/                    # thesis, manuscript, preprints, slides, etc.\n" %+%
-      study_name %+% "\n" %+%
-      "  code/                     # analysis and processing scripts (" %+% file_ext %+% ")\n" %+%
-      "  models/                   # fitted model objects (.rds)\n" %+%
-      "  plots/                    # generated figures (.png)\n" %+%
-      "  data/\n" %+%
-      "    README.md               # explain when, how, and by whom the data was collected.\n" %+%
-      "    raw/                    # raw data and codebooks/data dictionaries (should be read-only, except for removal of private data)\n" %+%
-      "    processed/              # cleaned datasets and codebooks/data dictionaries\n" %+%
-      "  outputs/                  # outputs of the processing and analyses scripts\n" %+%
-      "    plots/                  # plots and figures, .png/.pdf/etc.\n" %+%
-      "    fitted_models/          # fitted model objects, eg from brms, lme4, lavaan, etc.\n" %+%
-      "    results/                # tables and matrices, eg for descriptive statistics, formatted statistical results, correlation tables\n" %+%
-      "  materials/                # measures, implementations (qualtrics, lab.js, psychopy files, etc.), .docx files with items, etc.\n" %+%
-      "preregistration/            # preregistration documents\n" %+%
-      "LICENSE               # suggested: CC BY 4.0\n" %+%
-      "README.md             # this file\n" %+%
+      "studies/                    # individual studies within the project\n" %+%
+      "  " %+% study_name %+% "/\n" %+%
+      "    code/                   # analysis and processing scripts (" %+% file_ext %+% ")\n" %+%
+      "    data/\n" %+%
+      "      README.md             # explain when, how, and by whom the data was collected\n" %+%
+      "      raw/                  # raw data and codebooks/data dictionaries (read-only)\n" %+%
+      "      processed/            # cleaned datasets and codebooks/data dictionaries\n" %+%
+      "    outputs/                # outputs of the processing and analyses scripts\n" %+%
+      "      plots/                # plots and figures, .png/.pdf/etc.\n" %+%
+      "      fitted_models/        # fitted model objects, eg from brms, lme4, lavaan, etc.\n" %+%
+      "      results/              # tables and matrices, eg descriptive stats, correlation tables\n" %+%
+      "    materials/              # measures, implementations (qualtrics, lab.js, etc.)\n" %+%
+      "    preregistration/        # preregistration documents\n" %+%
+      "LICENSE                     # suggested: CC BY 4.0\n" %+%
+      "README.md                   # this file\n" %+%
       "```",
     "",
     if (literate) {
       paste(
         "## Reproducibility",
-        "- Place raw data in `data/raw/`.",
-        "- Write processing in `code/01-processing.qmd` and analyses in `code/02-analysis.qmd`.",
-        "- Re-run data processing with `code/01-processing.qmd`. This will create `code/01-processing.html` and files in `data/processed/` and `data/results/`.",
-        "- Re-run analyses with `code/02-analysis.qmd`. This will create `code/02-analysis.html`, plots in `code/plots/` and fitted model objects in `code/models/`.",
+        "- Place raw data in `studies/" %+% study_name %+% "/data/raw/`.",
+        "- Write processing in `studies/" %+% study_name %+% "/code/01-processing.qmd` and analyses in `studies/" %+% study_name %+% "/code/02-analysis.qmd`.",
+        "- Re-run data processing with `studies/" %+% study_name %+% "/code/01-processing.qmd`. This will create `01-processing.html` and files in `data/processed/` and `outputs/results/`.",
+        "- Re-run analyses with `studies/" %+% study_name %+% "/code/02-analysis.qmd`. This will create `02-analysis.html`, plots in `outputs/plots/` and fitted model objects in `outputs/fitted_models/`.",
         sep = "\n"
       )
     } else {
       paste(
         "## Reproducibility",
-        "- Place raw data in `data/raw/`.",
-        "- Write processing in `code/01-processing.R` and analyses in `code/02-analysis.R`.",
-        "- Run entire workflow with `source('code/00_run_all.R')` or run scripts individually.",
-        "- Processing creates files in `data/processed/` and `data/results/`.",
-        "- Analysis creates plots in `code/plots/` and fitted model objects in `code/models/`.",
+        "- Place raw data in `studies/" %+% study_name %+% "/data/raw/`.",
+        "- Write processing in `studies/" %+% study_name %+% "/code/01-processing.R` and analyses in `studies/" %+% study_name %+% "/code/02-analysis.R`.",
+        "- Run entire workflow with `source('studies/" %+% study_name %+% "/code/00_run_all.R')` or run scripts individually.",
+        "- Processing creates files in `data/processed/` and `outputs/results/`.",
+        "- Analysis creates plots in `outputs/plots/` and fitted model objects in `outputs/fitted_models/`.",
         sep = "\n"
       )
     },
@@ -191,13 +210,13 @@ init_project <- function(project_root = ".",
     "## License",
     "CC BY 4.0 (see `LICENSE`).",
     "## Suggested citation",
-    "Authors (Year). Title. URL.",
+    "Authors (Year). " %+% project_name %+% ". URL.",
     sep = "\n"
   )
   write_if_absent(readme_path, readme_text)
 
   # data README.md
-  data_readme_path <- join(project_root, study_name, "/data/README.md")
+  data_readme_path <- join(project_dir, "studies", study_name, "data", "README.md")
   data_readme_text <- paste(
     "# Data Provenance",
     "",
@@ -207,7 +226,7 @@ init_project <- function(project_root = ".",
   write_if_absent(data_readme_path, data_readme_text)
 
   # --- .gitignore ---
-  gitignore_path <- join(project_root, ".gitignore")
+  gitignore_path <- join(project_dir, ".gitignore")
   gitignore_text <- paste(
     "# History files",
     ".Rhistory",
@@ -230,8 +249,8 @@ init_project <- function(project_root = ".",
     "*.log",
     "",
     "# Large data (use Git LFS or external storage)",
-    "data/outputs/fitted_models/",
-    "data/outputs/plots/",
+    "studies/*/outputs/fitted_models/",
+    "studies/*/outputs/plots/",
     "",
     "# OS-specific files",
     ".DS_Store",
@@ -241,7 +260,7 @@ init_project <- function(project_root = ".",
   write_if_absent(gitignore_path, gitignore_text)
 
   # --- .gitattributes ---
-  gitattributes_path <- join(project_root, ".gitattributes")
+  gitattributes_path <- join(project_dir, ".gitattributes")
   gitattributes_text <- paste(
     "# Auto detect text files and perform LF normalization",
     "* text=auto",
@@ -254,27 +273,17 @@ init_project <- function(project_root = ".",
 
   # --- empty .qmd stubs or .R scripts ---
   if (literate) {
-    # Create .qmd files (existing behavior)
+    # Create .qmd files
     qmd_files <- c(
-      study_name %+% "/code/01-processing.qmd",
-      study_name %+% "/code/02-analysis.qmd"
+      "studies/" %+% study_name %+% "/code/01-processing.qmd",
+      "studies/" %+% study_name %+% "/code/02-analysis.qmd"
     )
 
     qmd_header <- function(title) {
-      # Normalize both paths
-      project_root_norm <- normalizePath(project_root, winslash = "/", mustWork = FALSE)
-      title_norm <- normalizePath(title, winslash = "/", mustWork = FALSE)
-      # Remove project_root prefix if present
-      if (startsWith(title_norm, project_root_norm)) {
-        title_clean <- substr(title_norm, nchar(project_root_norm) + 2, nchar(title_norm))
-        # +2 accounts for trailing slash in project_root_norm
-      } else {
-        title_clean <- title
-      }
-      # Remove leading "code/" if present
-      title_clean <- sub("^" %+% study_name %+% "/code/", "", title_clean)
-      # Remove trailing ".qmd"
+      # Clean up title for display
+      title_clean <- sub("^studies/" %+% study_name %+% "/code/", "", title)
       title_clean <- sub("\\.qmd$", "", title_clean)
+
       paste0(
         "---\n",
         "title: \"", title_clean, "\"\n",
@@ -291,7 +300,7 @@ init_project <- function(project_root = ".",
         "execute:\n",
         "  warning: false\n",
         "  message: false\n",
-        "bibliography: ../../literature/_references.bib\n",
+        "bibliography: ../../../literature/_references.bib\n",
         "---\n\n",
         "```{r setup}\n",
         "#| include: false\n",
@@ -315,24 +324,23 @@ init_project <- function(project_root = ".",
     }
 
     invisible(lapply(qmd_files, function(rel) {
-      write_if_absent(join(project_root, rel), qmd_header(gsub("^" %+% study_name %+% "/code/|\\.qmd$", "", rel)))
+      write_if_absent(join(project_dir, rel), qmd_header(rel))
     }))
 
-    code_files <- file.path(project_root, qmd_files)
-
+    code_files <- file.path(project_dir, qmd_files)
   } else {
     # Create .R files and master source script
     r_files <- c(
-      study_name %+% "/code/01-processing.R",
-      study_name %+% "/code/02-analysis.R"
+      "studies/" %+% study_name %+% "/code/01-processing.R",
+      "studies/" %+% study_name %+% "/code/02-analysis.R"
     )
 
-    # R script content (extracted R code from qmd template)
+    # R script content
     r_content <- function(script_name) {
       paste0(
         "# ", script_name, "\n",
         "# Author: author\n\n",
-        "# Consider to load and install the required packages in main file (00_run_all.R)\n\n",
+        "# Consider loading and installing required packages in main file (00_run_all.R)\n\n",
         "# Your code here...\n\n",
         "# Session info\n",
         "sessionInfo()\n\n"
@@ -342,18 +350,18 @@ init_project <- function(project_root = ".",
     # Create individual R scripts
     script_names <- c("01-processing", "02-analysis")
     invisible(lapply(seq_along(r_files), function(i) {
-      write_if_absent(join(project_root, r_files[i]), r_content(script_names[i]))
+      write_if_absent(join(project_dir, r_files[i]), r_content(script_names[i]))
     }))
 
     # Create master source script
-    master_script_path <- join(project_root, study_name, "code", "00_run_all.R")
+    master_script_path <- join(project_dir, "studies", study_name, "code", "00_run_all.R")
     master_script_content <- paste0(
       "# Main script to run entire analysis workflow\n",
       "# Setup -----\n",
       "options(scipen = 999) # turn off scientific notation globally\n",
       "set.seed(42)\n\n",
       "# Load packages ----- \n",
-      "# Consider to load and install the required packages here:\n",
+      "# Consider loading and installing required packages here:\n",
       "options(repos = c(CRAN = 'https://cloud.r-project.org'))\n",
       "if (!requireNamespace('groundhog', quietly = TRUE)) {\n",
       "  install.packages('groundhog')\n",
@@ -368,32 +376,27 @@ init_project <- function(project_root = ".",
     )
     write_if_absent(master_script_path, master_script_content)
 
-    code_files <- c(file.path(project_root, r_files), master_script_path)
+    code_files <- c(file.path(project_dir, r_files), master_script_path)
   }
 
   # --- Initialize git repository (optional) ---
   if (git_init) {
     if (Sys.which("git") != "") {
       old_wd <- getwd()
-      setwd(project_root)
-
+      setwd(project_dir)
       # Initialize git repo
       git_init_result <- system2("git", args = c("init"), stdout = FALSE, stderr = FALSE)
-
       if (git_init_result == 0) {
         # Stage all files
         system2("git", args = c("add", "."), stdout = FALSE, stderr = FALSE)
-
         # Initial commit
-        initial_commit_msg <- paste0("Initial project setup for ", study_name)
+        initial_commit_msg <- paste0("Initial project setup: ", project_name, " with ", study_name)
         system2("git", args = c("commit", "-m", shQuote(initial_commit_msg)),
                 stdout = FALSE, stderr = FALSE)
-
         message("Git repository initialized with initial commit")
       } else {
         warning("Failed to initialize git repository")
       }
-
       setwd(old_wd)
     } else {
       warning("Git not found on system. Skipping git initialization.")
@@ -401,34 +404,31 @@ init_project <- function(project_root = ".",
   }
 
   # --- Final messages and suggestions ---
-  message("\n", "* Project structure created successfully!")
-
+  message("\n", "* Project '", project_name, "' created successfully!")
+  message("* Study '", study_name, "' initialized in studies/ folder")
   if (literate) {
     message("* Created .qmd files for literate programming")
   } else {
     message("* Created .R scripts with master source file")
   }
-
   if (git_init && Sys.which("git") != "") {
     message("* Git repository initialized")
   }
 
   # Suggest opening the project
-  rproj_file <- normalizePath(rproj_path, mustWork = FALSE)
-  message("\n", "To get started:")
-  message("   Open the project: ", rproj_file)
-
-  if (requireNamespace("rstudioapi", quietly = TRUE)) {
-    message("\n", "Or run: rstudioapi::openProject(\"", normalizePath(project_root), "\")")
+  if (!open_session){
+    rproj_file <- normalizePath(rproj_path, mustWork = FALSE)
+    message("\n", "To get started:")
+    message("   Open the project: ", rproj_file)
+    if (requireNamespace("rstudioapi", quietly = TRUE)) {
+      message("\n", "Or run: rstudioapi::openProject(\"", normalizePath(project_dir), "\")")
+    }
   }
 
-  # return a summary
-  created <- data.frame(
-    path = c(paths_dir,
-             license_path, readme_path, rproj_path,
-             code_files),
-    type = c(rep("dir", length(paths_dir)),
-             "file","file", "file", rep("file", length(code_files)))
-  )
-  invisible(created)
+  if (open_session && requireNamespace("rstudioapi", quietly = TRUE)) {
+    rstudioapi::openProject(normalizePath(project_dir), newSession = TRUE)
+    message("* Opened project in RStudio")
+  } else if (open_session) {
+    warning("rstudioapi not available - cannot open project automatically")
+  }
 }

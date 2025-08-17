@@ -1,12 +1,14 @@
 Package: projectoR
-Title: What the Package Does (One Line, Title Case)
+Title: Create and Manage Structured Research Projects
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Hauke", "Roggenkamp", , "hauke.roggenkamp@unisg.ch", role = c("aut", "cre"))
+Description: Provides tools for creating standardized, reproducible research project structures. Supports organizing multiple studies within a single project, with automatic directory scaffolding, literate programming workflows (.qmd files), traditional R scripts, git integration, and bibliography management. Designed to promote best practices in research reproducibility and project organization.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Suggests: 
-    rstudioapi
+    rstudioapi,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

@@ -8,7 +8,7 @@ add_study(
   study_name,
   literate = NULL,
   git_add = TRUE,
-  project_root = ".",
+  path = ".",
   overwrite = FALSE
 )
 }
@@ -19,7 +19,7 @@ add_study(
 
 \item{git_add}{If TRUE and git repo exists, stages and commits the new study}
 
-\item{project_root}{Root directory of the project (default: current directory)}
+\item{path}{Root directory of the project (default: current directory)}
 
 \item{overwrite}{Whether to overwrite existing study if it exists}
 }
@@ -32,11 +32,11 @@ Adds a new study structure to an existing research project
 \examples{
 \dontrun{
 # First create a project
-init_project("my-project")
+start_project("my-project")
 
 # Then add studies to it
-add_study("study-2", project_root = "my-project")
-add_study("pilot-study", literate = FALSE, project_root = "my-project")
-add_study("study-3", git_add = FALSE, project_root = "my-project")
+add_study("study-2", path = "my-project")
+add_study("pilot-study", literate = FALSE, path = "my-project")
+add_study("study-3", git_add = FALSE, path = "my-project")
 }
 }
